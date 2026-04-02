@@ -63,7 +63,9 @@ struct RecipeDetailView: View {
             }
         }
         .navigationTitle("Recipe")
+        #if os(iOS)
         .navigationBarTitleDisplayMode(.inline)
+        #endif
         .task {
             await viewModel.load(id: recipeID)
         }
@@ -78,6 +80,10 @@ struct RecipeDetailView: View {
         ) else {
             return nil
         }
+        #if canImport(UIKit)
         return try? AttributedString(nsAttributed, including: \.uiKit)
+        #else
+        return AttributedString(nsAttributed.string)
+        #endif
     }
 }

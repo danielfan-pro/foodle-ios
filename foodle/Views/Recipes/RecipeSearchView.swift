@@ -88,7 +88,9 @@ struct RecipeSearchView: View {
                 }
             }
             .navigationTitle("Recipes")
+            #if os(iOS)
             .navigationBarTitleDisplayMode(.inline)
+            #endif
         }
     }
 }

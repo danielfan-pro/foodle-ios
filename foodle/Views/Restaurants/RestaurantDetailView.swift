@@ -94,7 +94,9 @@ struct RestaurantDetailView: View {
             }
         }
         .navigationTitle("Restaurant")
+        #if os(iOS)
         .navigationBarTitleDisplayMode(.inline)
+        #endif
         .task {
             await viewModel.load(id: restaurantID)
         }

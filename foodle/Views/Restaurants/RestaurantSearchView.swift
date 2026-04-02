@@ -95,7 +95,9 @@ struct RestaurantSearchView: View {
                 }
             }
             .navigationTitle("Restaurants")
+            #if os(iOS)
             .navigationBarTitleDisplayMode(.inline)
+            #endif
         }
     }
 }
