@@ -14,7 +14,7 @@ struct RecipeSearchView: View {
                             VStack(spacing: 12) {
                                 Text("Find Recipes")
                                     .font(.title2.bold())
-                                    .foregroundStyle(.white)
+                                    .foregroundStyle(.primary)
 
                                 TextField("category (pizza, pasta, etc)", text: $viewModel.item)
                                     .textInputAutocapitalization(.never)
@@ -27,14 +27,14 @@ struct RecipeSearchView: View {
                                         Task { await viewModel.search() }
                                     }
                                     .buttonStyle(.borderedProminent)
-                                    .tint(.orange)
+                                    .tint(.blue)
 
                                     Button("Reset") {
                                         viewModel.item = ""
                                         viewModel.reset()
                                     }
                                     .buttonStyle(.bordered)
-                                    .tint(.white)
+                                    .tint(.primary)
                                 }
 
                                 if let errorMessage = viewModel.errorMessage {
@@ -48,14 +48,14 @@ struct RecipeSearchView: View {
 
                         if viewModel.isLoading {
                             ProgressView()
-                                .tint(.white)
+                                .tint(.primary)
                         }
 
                         if let featured = viewModel.featured {
                             VStack(alignment: .leading, spacing: 10) {
                                 Text("Featured Recommendation")
                                     .font(.headline)
-                                    .foregroundStyle(.white.opacity(0.95))
+                                    .foregroundStyle(.primary)
 
                                 NavigationLink {
                                     RecipeDetailView(recipeID: featured.id)
@@ -70,7 +70,7 @@ struct RecipeSearchView: View {
                             VStack(alignment: .leading, spacing: 10) {
                                 Text("Alternative Recommendations")
                                     .font(.headline)
-                                    .foregroundStyle(.white.opacity(0.95))
+                                    .foregroundStyle(.primary)
 
                                 ForEach(viewModel.others) { recipe in
                                     NavigationLink {
@@ -103,12 +103,12 @@ private struct RecipeRowCard: View {
             VStack(alignment: .leading, spacing: 8) {
                 Text(recipe.title)
                     .font(.headline)
-                    .foregroundStyle(.white)
+                    .foregroundStyle(.primary)
 
                 if let ready = recipe.readyInMinutes {
                     Text("Ready in \(ready) min")
                         .font(.footnote)
-                        .foregroundStyle(.white.opacity(0.86))
+                        .foregroundStyle(.secondary)
                 }
 
                 RemoteImageView(urlString: recipe.image)

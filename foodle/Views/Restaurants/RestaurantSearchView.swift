@@ -14,7 +14,7 @@ struct RestaurantSearchView: View {
                             VStack(spacing: 12) {
                                 Text("Find Restaurants")
                                     .font(.title2.bold())
-                                    .foregroundStyle(.white)
+                                    .foregroundStyle(.primary)
 
                                 TextField("address, city, state or zip", text: $viewModel.location)
                                     .textInputAutocapitalization(.never)
@@ -33,7 +33,7 @@ struct RestaurantSearchView: View {
                                         Task { await viewModel.search() }
                                     }
                                     .buttonStyle(.borderedProminent)
-                                    .tint(.cyan)
+                                    .tint(.blue)
 
                                     Button("Reset") {
                                         viewModel.reset()
@@ -41,7 +41,7 @@ struct RestaurantSearchView: View {
                                         viewModel.item = ""
                                     }
                                     .buttonStyle(.bordered)
-                                    .tint(.white)
+                                    .tint(.primary)
                                 }
 
                                 if let errorMessage = viewModel.errorMessage {
@@ -55,14 +55,14 @@ struct RestaurantSearchView: View {
 
                         if viewModel.isLoading {
                             ProgressView()
-                                .tint(.white)
+                                .tint(.primary)
                         }
 
                         if let featured = viewModel.featured {
                             VStack(alignment: .leading, spacing: 10) {
                                 Text("Featured Recommendation")
                                     .font(.headline)
-                                    .foregroundStyle(.white.opacity(0.95))
+                                    .foregroundStyle(.primary)
 
                                 NavigationLink {
                                     RestaurantDetailView(restaurantID: featured.id)
@@ -77,7 +77,7 @@ struct RestaurantSearchView: View {
                             VStack(alignment: .leading, spacing: 10) {
                                 Text("Alternative Recommendations")
                                     .font(.headline)
-                                    .foregroundStyle(.white.opacity(0.95))
+                                    .foregroundStyle(.primary)
 
                                 ForEach(viewModel.others) { restaurant in
                                     NavigationLink {
@@ -110,21 +110,21 @@ private struct RestaurantRowCard: View {
             VStack(alignment: .leading, spacing: 8) {
                 Text(restaurant.name)
                     .font(.headline)
-                    .foregroundStyle(.white)
+                    .foregroundStyle(.primary)
 
                 RatingStarsView(rating: restaurant.rating)
 
                 if let price = restaurant.price {
                     Text(price)
                         .font(.subheadline.weight(.semibold))
-                        .foregroundStyle(.white.opacity(0.86))
+                        .foregroundStyle(.secondary)
                 }
 
                 let categories = restaurant.categories.map(\.title).joined(separator: ", ")
                 if !categories.isEmpty {
                     Text(categories)
                         .font(.footnote)
-                        .foregroundStyle(.white.opacity(0.86))
+                        .foregroundStyle(.secondary)
                         .padding(.bottom, 2)
                 }
 

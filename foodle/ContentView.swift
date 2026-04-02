@@ -13,6 +13,8 @@ struct ContentView: View {
                     Label("Recipes", systemImage: "book")
                 }
         }
+        .toolbarBackground(.visible, for: .tabBar)
+        .toolbarBackground(.regularMaterial, for: .tabBar)
     }
 }
 
