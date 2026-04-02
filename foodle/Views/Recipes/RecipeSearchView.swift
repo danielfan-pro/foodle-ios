@@ -3,6 +3,7 @@ import SwiftUI
 struct RecipeSearchView: View {
     @StateObject private var viewModel = RecipeSearchViewModel()
     @FocusState private var isInputFocused: Bool
+    @Environment(\.colorScheme) private var colorScheme
 
     var body: some View {
         NavigationStack {
@@ -27,7 +28,14 @@ struct RecipeSearchView: View {
                                     }
                                     .focused($isInputFocused)
                                     .padding(12)
-                                    .background(.thinMaterial, in: RoundedRectangle(cornerRadius: 12, style: .continuous))
+                                    .background(
+                                        RoundedRectangle(cornerRadius: 12, style: .continuous)
+                                            .fill(searchFieldBackgroundColor)
+                                    )
+                                    .overlay(
+                                        RoundedRectangle(cornerRadius: 12, style: .continuous)
+                                            .stroke(searchFieldBorderColor, lineWidth: 0.8)
+                                    )
 
                                 HStack(spacing: 10) {
                                     Button("Search") {
@@ -99,6 +107,16 @@ struct RecipeSearchView: View {
             .navigationBarTitleDisplayMode(.inline)
             #endif
         }
+    }
+}
+
+private extension RecipeSearchView {
+    var searchFieldBackgroundColor: Color {
+        colorScheme == .dark ? Color.white.opacity(0.16) : Color.white.opacity(0.85)
+    }
+
+    var searchFieldBorderColor: Color {
+        colorScheme == .dark ? Color.white.opacity(0.24) : Color.black.opacity(0.08)
     }
 }
 

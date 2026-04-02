@@ -7,7 +7,9 @@ struct RestaurantSearchView: View {
     }
 
     @StateObject private var viewModel = RestaurantSearchViewModel()
+    @State private var currentLocationProvider = CurrentLocationProvider()
     @FocusState private var focusedField: FocusField?
+    @Environment(\.colorScheme) private var colorScheme
 
     var body: some View {
         NavigationStack {
@@ -32,7 +34,14 @@ struct RestaurantSearchView: View {
                                     }
                                     .focused($focusedField, equals: .location)
                                     .padding(12)
-                                    .background(.thinMaterial, in: RoundedRectangle(cornerRadius: 12, style: .continuous))
+                                    .background(
+                                        RoundedRectangle(cornerRadius: 12, style: .continuous)
+                                            .fill(searchFieldBackgroundColor)
+                                    )
+                                    .overlay(
+                                        RoundedRectangle(cornerRadius: 12, style: .continuous)
+                                            .stroke(searchFieldBorderColor, lineWidth: 0.8)
+                                    )
 
                                 TextField("category (pizza, sandwich, etc)", text: $viewModel.item)
                                     .textInputAutocapitalization(.never)
@@ -44,7 +53,14 @@ struct RestaurantSearchView: View {
                                     }
                                     .focused($focusedField, equals: .item)
                                     .padding(12)
-                                    .background(.thinMaterial, in: RoundedRectangle(cornerRadius: 12, style: .continuous))
+                                    .background(
+                                        RoundedRectangle(cornerRadius: 12, style: .continuous)
+                                            .fill(searchFieldBackgroundColor)
+                                    )
+                                    .overlay(
+                                        RoundedRectangle(cornerRadius: 12, style: .continuous)
+                                            .stroke(searchFieldBorderColor, lineWidth: 0.8)
+                                    )
 
                                 HStack(spacing: 10) {
                                     Button("Search") {
@@ -52,6 +68,13 @@ struct RestaurantSearchView: View {
                                     }
                                     .buttonStyle(.borderedProminent)
                                     .tint(.blue)
+
+                                    Button("Surprise Me!") {
+                                        focusedField = nil
+                                        Task { await searchFromCurrentLocation() }
+                                    }
+                                    .buttonStyle(.borderedProminent)
+                                    .tint(.teal)
 
                                     Button("Reset") {
                                         viewModel.reset()
@@ -117,6 +140,26 @@ struct RestaurantSearchView: View {
             .navigationBarTitleDisplayMode(.inline)
             #endif
         }
+    }
+
+    private func searchFromCurrentLocation() async {
+        do {
+            let locationQuery = try await currentLocationProvider.requestCurrentLocationQuery()
+            viewModel.location = locationQuery
+            await viewModel.search()
+        } catch {
+            viewModel.errorMessage = error.localizedDescription
+        }
+    }
+}
+
+private extension RestaurantSearchView {
+    var searchFieldBackgroundColor: Color {
+        colorScheme == .dark ? Color.white.opacity(0.16) : Color.white.opacity(0.85)
+    }
+
+    var searchFieldBorderColor: Color {
+        colorScheme == .dark ? Color.white.opacity(0.24) : Color.black.opacity(0.08)
     }
 }
 

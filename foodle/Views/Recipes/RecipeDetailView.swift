@@ -1,6 +1,7 @@
 import SwiftUI
 
 struct RecipeDetailView: View {
+    @Environment(\.colorScheme) private var colorScheme
     let recipeID: Int
     @StateObject private var viewModel = RecipeDetailViewModel()
 
@@ -45,7 +46,8 @@ struct RecipeDetailView: View {
                                 if let sourceURL = recipe.sourceURL,
                                    let url = URL(string: sourceURL) {
                                     Link("Read full instructions (external site)", destination: url)
-                                        .foregroundStyle(.blue)
+                                        .foregroundStyle(linkColor)
+                                        .underline()
                                         .padding(.top, 2)
                                 }
                             }
@@ -80,10 +82,14 @@ struct RecipeDetailView: View {
         ) else {
             return nil
         }
-        #if canImport(UIKit)
-        return try? AttributedString(nsAttributed, including: \.uiKit)
-        #else
+        // Strip embedded HTML styling (including hard-to-read link colors in dark mode)
+        // and render plain readable text in app-defined colors.
         return AttributedString(nsAttributed.string)
-        #endif
+    }
+}
+
+private extension RecipeDetailView {
+    var linkColor: Color {
+        colorScheme == .dark ? Color(red: 0.72, green: 0.90, blue: 1.0) : .blue
     }
 }
