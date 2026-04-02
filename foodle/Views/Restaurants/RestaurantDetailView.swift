@@ -71,7 +71,7 @@ struct RestaurantDetailView: View {
 
                                 let address = restaurant.location?.displayAddress.joined(separator: ", ") ?? ""
                                 if !address.isEmpty {
-                                    if let mapsURL = mapsDirectionsURL(for: restaurant, address: address) {
+                                    if let mapsURL = mapsPinURL(for: restaurant, address: address) {
                                         Link(destination: mapsURL) {
                                             Text(address)
                                                 .font(.footnote)
@@ -155,22 +155,19 @@ struct RestaurantDetailView: View {
         return URL(string: "tel://\(compact)")
     }
 
-    private func mapsDirectionsURL(for restaurant: Restaurant, address: String) -> URL? {
+    private func mapsPinURL(for restaurant: Restaurant, address: String) -> URL? {
         var components = URLComponents()
         components.scheme = "https"
         components.host = "maps.apple.com"
 
-        var items: [URLQueryItem] = [
-            URLQueryItem(name: "dirflg", value: "d")
-        ]
+        var items: [URLQueryItem] = []
 
         if let latitude = restaurant.coordinates?.latitude,
            let longitude = restaurant.coordinates?.longitude {
-            items.append(URLQueryItem(name: "daddr", value: "\(latitude),\(longitude)"))
+            items.append(URLQueryItem(name: "ll", value: "\(latitude),\(longitude)"))
             items.append(URLQueryItem(name: "q", value: restaurant.name))
         } else {
-            items.append(URLQueryItem(name: "daddr", value: address))
-            items.append(URLQueryItem(name: "q", value: restaurant.name))
+            items.append(URLQueryItem(name: "q", value: "\(restaurant.name), \(address)"))
         }
 
         components.queryItems = items
