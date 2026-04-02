@@ -47,8 +47,7 @@ struct RestaurantDetailView: View {
                                     if let phoneURL = phoneLinkURL(from: phone) {
                                         actionRow(
                                             title: phone,
-                                            systemImage: "phone.fill",
-                                            copyValue: phone
+                                            systemImage: "phone.fill"
                                         ) {
                                             openExternalURL(phoneURL, alert: .phone)
                                         }
@@ -62,8 +61,7 @@ struct RestaurantDetailView: View {
                                    let websiteURL = normalizedExternalURL(from: website) {
                                     actionRow(
                                         title: website,
-                                        systemImage: "safari.fill",
-                                        copyValue: websiteURL.absoluteString
+                                        systemImage: "safari.fill"
                                     ) {
                                         openExternalURL(websiteURL, alert: .website)
                                     }
@@ -75,8 +73,7 @@ struct RestaurantDetailView: View {
                                 if let yelpURL = yelpDestinationURL(for: restaurant) {
                                     actionRow(
                                         title: "View on Yelp",
-                                        systemImage: "star.bubble.fill",
-                                        copyValue: yelpURL.absoluteString
+                                        systemImage: "star.bubble.fill"
                                     ) {
                                         openExternalURL(yelpURL, alert: .yelp)
                                     }
@@ -281,49 +278,24 @@ struct RestaurantDetailView: View {
     private func actionRow(
         title: String,
         systemImage: String,
-        copyValue: String? = nil,
         action: @escaping () -> Void
     ) -> some View {
-        HStack(spacing: 8) {
-            Button(action: action) {
-                HStack(spacing: 10) {
-                    Image(systemName: systemImage)
-                        .font(.footnote.weight(.semibold))
-                    Text(title)
-                        .lineLimit(2)
-                    Spacer(minLength: 0)
-                }
-                .frame(maxWidth: .infinity, alignment: .leading)
-                .padding(.vertical, 8)
-                .contentShape(Rectangle())
+        Button(action: action) {
+            HStack(spacing: 10) {
+                Image(systemName: systemImage)
+                    .font(.footnote.weight(.semibold))
+                Text(title)
+                    .lineLimit(2)
+                Spacer(minLength: 0)
             }
-            .buttonStyle(.plain)
-            .foregroundStyle(.blue)
-            .background(Color.black.opacity(0.001))
-            .zIndex(10)
-
-            if let copyValue {
-                Button {
-                    copyToPasteboard(copyValue)
-                } label: {
-                    Image(systemName: "doc.on.doc")
-                        .font(.footnote.weight(.semibold))
-                        .frame(width: 28, height: 28)
-                }
-                .buttonStyle(.plain)
-                .foregroundStyle(.blue.opacity(0.9))
-                .background(Color.black.opacity(0.001))
-                .zIndex(10)
-            }
+            .frame(maxWidth: .infinity, alignment: .leading)
+            .padding(.vertical, 8)
+            .contentShape(Rectangle())
         }
+        .buttonStyle(.plain)
+        .foregroundStyle(.blue)
         .background(Color.black.opacity(0.001))
         .zIndex(10)
-    }
-
-    private func copyToPasteboard(_ value: String) {
-        #if canImport(UIKit)
-        UIPasteboard.general.string = value
-        #endif
     }
 }
 
