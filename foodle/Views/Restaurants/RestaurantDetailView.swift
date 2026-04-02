@@ -1,9 +1,15 @@
 import MapKit
 import SwiftUI
+#if canImport(UIKit)
+import UIKit
+#endif
 
 struct RestaurantDetailView: View {
     let restaurantID: String
     @StateObject private var viewModel = RestaurantDetailViewModel()
+    @State private var showYelpAlert = false
+    @State private var showWebsiteAlert = false
+    @State private var showPhoneAlert = false
 
     var body: some View {
         ZStack {
@@ -39,8 +45,13 @@ struct RestaurantDetailView: View {
 
                                 if let phone = restaurant.displayPhone, !phone.isEmpty {
                                     if let phoneURL = phoneLinkURL(from: phone) {
-                                        Link(phone, destination: phoneURL)
-                                            .foregroundStyle(.blue)
+                                        actionRow(
+                                            title: phone,
+                                            systemImage: "phone.fill",
+                                            copyValue: phone
+                                        ) {
+                                            openExternalURL(phoneURL, alert: .phone)
+                                        }
                                     } else {
                                         Text(phone)
                                             .foregroundStyle(.white.opacity(0.88))
@@ -49,25 +60,33 @@ struct RestaurantDetailView: View {
 
                                 if let website = restaurant.websiteURL,
                                    let websiteURL = normalizedExternalURL(from: website) {
-                                    Link(destination: websiteURL) {
-                                        Text(website)
+                                    actionRow(
+                                        title: website,
+                                        systemImage: "safari.fill",
+                                        copyValue: websiteURL.absoluteString
+                                    ) {
+                                        openExternalURL(websiteURL, alert: .website)
                                     }
-                                    .foregroundStyle(.blue)
                                 } else if let website = restaurant.websiteURL, !website.isEmpty {
                                     Text(website)
                                         .foregroundStyle(.white.opacity(0.88))
                                 }
 
-                                if let yelpURL = restaurant.yelpURL,
-                                   let normalizedYelpURL = normalizedExternalURL(from: yelpURL) {
-                                    Link("View on Yelp", destination: normalizedYelpURL)
-                                    .foregroundStyle(.blue)
+                                if let yelpURL = yelpDestinationURL(for: restaurant) {
+                                    actionRow(
+                                        title: "View on Yelp",
+                                        systemImage: "star.bubble.fill",
+                                        copyValue: yelpURL.absoluteString
+                                    ) {
+                                        openExternalURL(yelpURL, alert: .yelp)
+                                    }
                                 } else if let yelpURL = restaurant.yelpURL, !yelpURL.isEmpty {
                                     Text("Yelp link unavailable")
                                         .foregroundStyle(.blue)
                                 }
 
                                 RemoteImageView(urlString: restaurant.imageURL, height: 220)
+                                    .allowsHitTesting(false)
 
                                 let address = restaurant.location?.displayAddress.joined(separator: ", ") ?? ""
                                 if !address.isEmpty {
@@ -86,6 +105,7 @@ struct RestaurantDetailView: View {
                                             .padding(.top, 4)
                                     }
                                 }
+
                             }
                         }
 
@@ -98,6 +118,7 @@ struct RestaurantDetailView: View {
                                 Marker(restaurant.name, coordinate: CLLocationCoordinate2D(latitude: latitude, longitude: longitude))
                             }
                             .frame(height: 220)
+                            .allowsHitTesting(false)
                             .clipShape(RoundedRectangle(cornerRadius: 18, style: .continuous))
                             .overlay(
                                 RoundedRectangle(cornerRadius: 18, style: .continuous)
@@ -122,6 +143,21 @@ struct RestaurantDetailView: View {
         #endif
         .task {
             await viewModel.load(id: restaurantID)
+        }
+        .alert("Can't Open Yelp", isPresented: $showYelpAlert) {
+            Button("OK", role: .cancel) {}
+        } message: {
+            Text("The Yelp page could not be opened.")
+        }
+        .alert("Can't Open Website", isPresented: $showWebsiteAlert) {
+            Button("OK", role: .cancel) {}
+        } message: {
+            Text("The website could not be opened.")
+        }
+        .alert("Can't Call Number", isPresented: $showPhoneAlert) {
+            Button("OK", role: .cancel) {}
+        } message: {
+            Text("The phone number could not be opened.")
         }
     }
 
@@ -155,6 +191,50 @@ struct RestaurantDetailView: View {
         return URL(string: "tel://\(compact)")
     }
 
+    private func yelpDestinationURL(for restaurant: Restaurant) -> URL? {
+        if let rawURL = restaurant.yelpURL?.trimmingCharacters(in: .whitespacesAndNewlines),
+           !rawURL.isEmpty,
+           let directURL = directWebURL(from: rawURL) {
+            return directURL
+        }
+
+        let locationText = restaurant.location?.displayAddress.joined(separator: ", ")
+            ?? [restaurant.location?.city, restaurant.location?.state]
+                .compactMap { $0 }
+                .joined(separator: ", ")
+
+        var components = URLComponents()
+        components.scheme = "https"
+        components.host = "www.yelp.com"
+        components.path = "/search"
+        components.queryItems = [
+            URLQueryItem(name: "find_desc", value: restaurant.name),
+            URLQueryItem(name: "find_loc", value: locationText)
+        ]
+        return components.url
+    }
+
+    private func directWebURL(from value: String) -> URL? {
+        let trimmed = value.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !trimmed.isEmpty else { return nil }
+
+        let candidates: [String]
+        if trimmed.lowercased().hasPrefix("http://") || trimmed.lowercased().hasPrefix("https://") {
+            candidates = [trimmed]
+        } else {
+            candidates = ["https://\(trimmed)"]
+        }
+
+        for candidate in candidates {
+            if let url = URL(string: candidate), let scheme = url.scheme?.lowercased(),
+               scheme == "http" || scheme == "https" {
+                return url
+            }
+        }
+
+        return nil
+    }
+
     private func mapsPinURL(for restaurant: Restaurant, address: String) -> URL? {
         var components = URLComponents()
         components.scheme = "https"
@@ -173,4 +253,82 @@ struct RestaurantDetailView: View {
         components.queryItems = items
         return components.url
     }
+
+    private func openExternalURL(_ url: URL, alert: ExternalAlert) {
+        #if canImport(UIKit)
+        UIApplication.shared.open(url, options: [:]) { success in
+            if !success {
+                showAlert(alert)
+            }
+        }
+        #else
+        showAlert(alert)
+        #endif
+    }
+
+    private func showAlert(_ alert: ExternalAlert) {
+        switch alert {
+        case .yelp:
+            showYelpAlert = true
+        case .website:
+            showWebsiteAlert = true
+        case .phone:
+            showPhoneAlert = true
+        }
+    }
+
+    @ViewBuilder
+    private func actionRow(
+        title: String,
+        systemImage: String,
+        copyValue: String? = nil,
+        action: @escaping () -> Void
+    ) -> some View {
+        HStack(spacing: 8) {
+            Button(action: action) {
+                HStack(spacing: 10) {
+                    Image(systemName: systemImage)
+                        .font(.footnote.weight(.semibold))
+                    Text(title)
+                        .lineLimit(2)
+                    Spacer(minLength: 0)
+                }
+                .frame(maxWidth: .infinity, alignment: .leading)
+                .padding(.vertical, 8)
+                .contentShape(Rectangle())
+            }
+            .buttonStyle(.plain)
+            .foregroundStyle(.blue)
+            .background(Color.black.opacity(0.001))
+            .zIndex(10)
+
+            if let copyValue {
+                Button {
+                    copyToPasteboard(copyValue)
+                } label: {
+                    Image(systemName: "doc.on.doc")
+                        .font(.footnote.weight(.semibold))
+                        .frame(width: 28, height: 28)
+                }
+                .buttonStyle(.plain)
+                .foregroundStyle(.blue.opacity(0.9))
+                .background(Color.black.opacity(0.001))
+                .zIndex(10)
+            }
+        }
+        .background(Color.black.opacity(0.001))
+        .zIndex(10)
+    }
+
+    private func copyToPasteboard(_ value: String) {
+        #if canImport(UIKit)
+        UIPasteboard.general.string = value
+        #endif
+    }
+}
+
+private enum ExternalAlert {
+    case yelp
+    case website
+    case phone
 }
