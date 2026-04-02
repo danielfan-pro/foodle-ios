@@ -1,21 +1,18 @@
-//
-//  ContentView.swift
-//  foodle
-//
-//  Created by Daniel Fan on 4/2/26.
-//
-
 import SwiftUI
 
 struct ContentView: View {
     var body: some View {
-        VStack {
-            Image(systemName: "globe")
-                .imageScale(.large)
-                .foregroundStyle(.tint)
-            Text("Hello, world!")
+        TabView {
+            RestaurantSearchView()
+                .tabItem {
+                    Label("Restaurants", systemImage: "fork.knife")
+                }
+
+            RecipeSearchView()
+                .tabItem {
+                    Label("Recipes", systemImage: "book")
+                }
         }
-        .padding()
     }
 }
 
