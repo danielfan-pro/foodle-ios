@@ -38,19 +38,32 @@ struct RestaurantDetailView: View {
                                 }
 
                                 if let phone = restaurant.displayPhone, !phone.isEmpty {
-                                    Text(phone)
-                                        .foregroundStyle(.white.opacity(0.88))
-                                }
-
-                                if let website = restaurant.websiteURL, !website.isEmpty {
-                                    Link(destination: normalizedURL(from: website)) {
-                                        Text(website)
+                                    if let phoneURL = phoneLinkURL(from: phone) {
+                                        Link(phone, destination: phoneURL)
                                             .foregroundStyle(.blue)
+                                    } else {
+                                        Text(phone)
+                                            .foregroundStyle(.white.opacity(0.88))
                                     }
                                 }
 
-                                if let yelpURL = restaurant.yelpURL, let url = URL(string: yelpURL) {
-                                    Link("View on Yelp", destination: url)
+                                if let website = restaurant.websiteURL,
+                                   let websiteURL = normalizedExternalURL(from: website) {
+                                    Link(destination: websiteURL) {
+                                        Text(website)
+                                    }
+                                    .foregroundStyle(.blue)
+                                } else if let website = restaurant.websiteURL, !website.isEmpty {
+                                    Text(website)
+                                        .foregroundStyle(.white.opacity(0.88))
+                                }
+
+                                if let yelpURL = restaurant.yelpURL,
+                                   let normalizedYelpURL = normalizedExternalURL(from: yelpURL) {
+                                    Link("View on Yelp", destination: normalizedYelpURL)
+                                    .foregroundStyle(.blue)
+                                } else if let yelpURL = restaurant.yelpURL, !yelpURL.isEmpty {
+                                    Text("Yelp link unavailable")
                                         .foregroundStyle(.blue)
                                 }
 
@@ -58,10 +71,20 @@ struct RestaurantDetailView: View {
 
                                 let address = restaurant.location?.displayAddress.joined(separator: ", ") ?? ""
                                 if !address.isEmpty {
-                                    Text(address)
-                                        .font(.footnote)
-                                        .foregroundStyle(.white.opacity(0.88))
+                                    if let mapsURL = mapsDirectionsURL(for: restaurant, address: address) {
+                                        Link(destination: mapsURL) {
+                                            Text(address)
+                                                .font(.footnote)
+                                                .underline()
+                                        }
+                                        .foregroundStyle(.blue)
                                         .padding(.top, 4)
+                                    } else {
+                                        Text(address)
+                                            .font(.footnote)
+                                            .foregroundStyle(.white.opacity(0.88))
+                                            .padding(.top, 4)
+                                    }
                                 }
                             }
                         }
@@ -102,10 +125,55 @@ struct RestaurantDetailView: View {
         }
     }
 
-    private func normalizedURL(from value: String) -> URL {
-        if let direct = URL(string: value), direct.scheme != nil {
+    private func normalizedExternalURL(from value: String) -> URL? {
+        let trimmed = value.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !trimmed.isEmpty else { return nil }
+
+        let withScheme: String
+        if trimmed.lowercased().hasPrefix("http://") || trimmed.lowercased().hasPrefix("https://") {
+            withScheme = trimmed
+        } else {
+            withScheme = "https://\(trimmed)"
+        }
+
+        if let direct = URL(string: withScheme), direct.scheme != nil {
             return direct
         }
-        return URL(string: "https://\(value)") ?? URL(string: "https://www.yelp.com") ?? URL(fileURLWithPath: "/")
+
+        let allowed = CharacterSet(charactersIn: "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789-._~:/?#[]@!$&'()*+,;=%")
+        if let encoded = withScheme.addingPercentEncoding(withAllowedCharacters: allowed) {
+            return URL(string: encoded)
+        }
+
+        return nil
+    }
+
+    private func phoneLinkURL(from value: String) -> URL? {
+        let allowed = CharacterSet(charactersIn: "+0123456789")
+        let compact = String(value.unicodeScalars.filter { allowed.contains($0) })
+        guard !compact.isEmpty else { return nil }
+        return URL(string: "tel://\(compact)")
+    }
+
+    private func mapsDirectionsURL(for restaurant: Restaurant, address: String) -> URL? {
+        var components = URLComponents()
+        components.scheme = "https"
+        components.host = "maps.apple.com"
+
+        var items: [URLQueryItem] = [
+            URLQueryItem(name: "dirflg", value: "d")
+        ]
+
+        if let latitude = restaurant.coordinates?.latitude,
+           let longitude = restaurant.coordinates?.longitude {
+            items.append(URLQueryItem(name: "daddr", value: "\(latitude),\(longitude)"))
+            items.append(URLQueryItem(name: "q", value: restaurant.name))
+        } else {
+            items.append(URLQueryItem(name: "daddr", value: address))
+            items.append(URLQueryItem(name: "q", value: restaurant.name))
+        }
+
+        components.queryItems = items
+        return components.url
     }
 }

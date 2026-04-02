@@ -2,6 +2,7 @@ import SwiftUI
 
 struct RecipeSearchView: View {
     @StateObject private var viewModel = RecipeSearchViewModel()
+    @FocusState private var isInputFocused: Bool
 
     var body: some View {
         NavigationStack {
@@ -19,6 +20,12 @@ struct RecipeSearchView: View {
                                 TextField("category (pizza, pasta, etc)", text: $viewModel.item)
                                     .textInputAutocapitalization(.never)
                                     .autocorrectionDisabled()
+                                    .submitLabel(.search)
+                                    .onSubmit {
+                                        isInputFocused = false
+                                        Task { await viewModel.search() }
+                                    }
+                                    .focused($isInputFocused)
                                     .padding(12)
                                     .background(.thinMaterial, in: RoundedRectangle(cornerRadius: 12, style: .continuous))
 

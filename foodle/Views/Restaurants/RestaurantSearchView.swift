@@ -1,7 +1,13 @@
 import SwiftUI
 
 struct RestaurantSearchView: View {
+    private enum FocusField {
+        case location
+        case item
+    }
+
     @StateObject private var viewModel = RestaurantSearchViewModel()
+    @FocusState private var focusedField: FocusField?
 
     var body: some View {
         NavigationStack {
@@ -19,12 +25,24 @@ struct RestaurantSearchView: View {
                                 TextField("address, city, state or zip", text: $viewModel.location)
                                     .textInputAutocapitalization(.never)
                                     .autocorrectionDisabled()
+                                    .submitLabel(.search)
+                                    .onSubmit {
+                                        focusedField = nil
+                                        Task { await viewModel.search() }
+                                    }
+                                    .focused($focusedField, equals: .location)
                                     .padding(12)
                                     .background(.thinMaterial, in: RoundedRectangle(cornerRadius: 12, style: .continuous))
 
                                 TextField("category (pizza, sandwich, etc)", text: $viewModel.item)
                                     .textInputAutocapitalization(.never)
                                     .autocorrectionDisabled()
+                                    .submitLabel(.search)
+                                    .onSubmit {
+                                        focusedField = nil
+                                        Task { await viewModel.search() }
+                                    }
+                                    .focused($focusedField, equals: .item)
                                     .padding(12)
                                     .background(.thinMaterial, in: RoundedRectangle(cornerRadius: 12, style: .continuous))
 
