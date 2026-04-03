@@ -13,126 +13,134 @@ struct RestaurantSearchView: View {
 
     var body: some View {
         NavigationStack {
-            ZStack {
-                GlassBackgroundView()
+            GeometryReader { proxy in
+                ZStack {
+                    GlassBackgroundView()
 
-                ScrollView {
-                    VStack(spacing: 16) {
-                        GlassCard {
-                            VStack(spacing: 12) {
-                                Text("Find Restaurants")
-                                    .font(.title2.bold())
-                                    .foregroundStyle(.primary)
+                    ScrollView {
+                        let contentWidth = max(proxy.size.width - 32, 0)
 
-                                TextField("address, city, state or zip", text: $viewModel.location)
-                                    .textInputAutocapitalization(.never)
-                                    .autocorrectionDisabled()
-                                    .submitLabel(.search)
-                                    .onSubmit {
-                                        focusedField = nil
-                                        Task { await viewModel.search() }
+                        VStack(spacing: 16) {
+                            GlassCard {
+                                VStack(spacing: 12) {
+                                    Text("Find Restaurants")
+                                        .font(.title2.bold())
+                                        .foregroundStyle(.primary)
+
+                                    TextField("address, city, state or zip", text: $viewModel.location)
+                                        .textInputAutocapitalization(.never)
+                                        .autocorrectionDisabled()
+                                        .submitLabel(.search)
+                                        .onSubmit {
+                                            focusedField = nil
+                                            Task { await viewModel.search() }
+                                        }
+                                        .focused($focusedField, equals: .location)
+                                        .padding(12)
+                                        .background(
+                                            RoundedRectangle(cornerRadius: 12, style: .continuous)
+                                                .fill(searchFieldBackgroundColor)
+                                        )
+                                        .overlay(
+                                            RoundedRectangle(cornerRadius: 12, style: .continuous)
+                                                .stroke(searchFieldBorderColor, lineWidth: 0.8)
+                                        )
+
+                                    TextField("category (pizza, sandwich, etc)", text: $viewModel.item)
+                                        .textInputAutocapitalization(.never)
+                                        .autocorrectionDisabled()
+                                        .submitLabel(.search)
+                                        .onSubmit {
+                                            focusedField = nil
+                                            Task { await viewModel.search() }
+                                        }
+                                        .focused($focusedField, equals: .item)
+                                        .padding(12)
+                                        .background(
+                                            RoundedRectangle(cornerRadius: 12, style: .continuous)
+                                                .fill(searchFieldBackgroundColor)
+                                        )
+                                        .overlay(
+                                            RoundedRectangle(cornerRadius: 12, style: .continuous)
+                                                .stroke(searchFieldBorderColor, lineWidth: 0.8)
+                                        )
+
+                                    HStack(spacing: 10) {
+                                        Button("Search") {
+                                            Task { await viewModel.search() }
+                                        }
+                                        .buttonStyle(.borderedProminent)
+                                        .tint(.blue)
+
+                                        Button("Surprise Me!") {
+                                            focusedField = nil
+                                            Task { await searchFromCurrentLocation() }
+                                        }
+                                        .buttonStyle(.borderedProminent)
+                                        .tint(.teal)
+
+                                        Button("Reset") {
+                                            viewModel.reset()
+                                            viewModel.location = ""
+                                            viewModel.item = ""
+                                        }
+                                        .buttonStyle(.bordered)
+                                        .tint(.primary)
                                     }
-                                    .focused($focusedField, equals: .location)
-                                    .padding(12)
-                                    .background(
-                                        RoundedRectangle(cornerRadius: 12, style: .continuous)
-                                            .fill(searchFieldBackgroundColor)
-                                    )
-                                    .overlay(
-                                        RoundedRectangle(cornerRadius: 12, style: .continuous)
-                                            .stroke(searchFieldBorderColor, lineWidth: 0.8)
-                                    )
 
-                                TextField("category (pizza, sandwich, etc)", text: $viewModel.item)
-                                    .textInputAutocapitalization(.never)
-                                    .autocorrectionDisabled()
-                                    .submitLabel(.search)
-                                    .onSubmit {
-                                        focusedField = nil
-                                        Task { await viewModel.search() }
+                                    if let errorMessage = viewModel.errorMessage {
+                                        Text(errorMessage)
+                                            .font(.footnote)
+                                            .foregroundStyle(.red)
+                                            .multilineTextAlignment(.center)
                                     }
-                                    .focused($focusedField, equals: .item)
-                                    .padding(12)
-                                    .background(
-                                        RoundedRectangle(cornerRadius: 12, style: .continuous)
-                                            .fill(searchFieldBackgroundColor)
-                                    )
-                                    .overlay(
-                                        RoundedRectangle(cornerRadius: 12, style: .continuous)
-                                            .stroke(searchFieldBorderColor, lineWidth: 0.8)
-                                    )
+                                }
+                            }
+                            .frame(width: contentWidth)
 
-                                HStack(spacing: 10) {
-                                    Button("Search") {
-                                        Task { await viewModel.search() }
-                                    }
-                                    .buttonStyle(.borderedProminent)
-                                    .tint(.blue)
-
-                                    Button("Surprise Me!") {
-                                        focusedField = nil
-                                        Task { await searchFromCurrentLocation() }
-                                    }
-                                    .buttonStyle(.borderedProminent)
-                                    .tint(.teal)
-
-                                    Button("Reset") {
-                                        viewModel.reset()
-                                        viewModel.location = ""
-                                        viewModel.item = ""
-                                    }
-                                    .buttonStyle(.bordered)
+                            if viewModel.isLoading {
+                                ProgressView()
                                     .tint(.primary)
-                                }
-
-                                if let errorMessage = viewModel.errorMessage {
-                                    Text(errorMessage)
-                                        .font(.footnote)
-                                        .foregroundStyle(.red)
-                                        .multilineTextAlignment(.center)
-                                }
                             }
-                        }
 
-                        if viewModel.isLoading {
-                            ProgressView()
-                                .tint(.primary)
-                        }
+                            if let featured = viewModel.featured {
+                                VStack(alignment: .leading, spacing: 10) {
+                                    Text("Featured Recommendation")
+                                        .font(.headline)
+                                        .foregroundStyle(.primary)
 
-                        if let featured = viewModel.featured {
-                            VStack(alignment: .leading, spacing: 10) {
-                                Text("Featured Recommendation")
-                                    .font(.headline)
-                                    .foregroundStyle(.primary)
-
-                                NavigationLink {
-                                    RestaurantDetailView(restaurantID: featured.id)
-                                } label: {
-                                    RestaurantRowCard(restaurant: featured)
-                                }
-                                .buttonStyle(.plain)
-                            }
-                        }
-
-                        if !viewModel.others.isEmpty {
-                            VStack(alignment: .leading, spacing: 10) {
-                                Text("Alternative Recommendations")
-                                    .font(.headline)
-                                    .foregroundStyle(.primary)
-
-                                ForEach(viewModel.others) { restaurant in
                                     NavigationLink {
-                                        RestaurantDetailView(restaurantID: restaurant.id)
+                                        RestaurantDetailView(restaurantID: featured.id)
                                     } label: {
-                                        RestaurantRowCard(restaurant: restaurant)
+                                        RestaurantRowCard(restaurant: featured)
                                     }
                                     .buttonStyle(.plain)
                                 }
+                                .frame(width: contentWidth, alignment: .leading)
+                            }
+
+                            if !viewModel.others.isEmpty {
+                                VStack(alignment: .leading, spacing: 10) {
+                                    Text("Alternative Recommendations")
+                                        .font(.headline)
+                                        .foregroundStyle(.primary)
+
+                                    ForEach(viewModel.others) { restaurant in
+                                        NavigationLink {
+                                            RestaurantDetailView(restaurantID: restaurant.id)
+                                        } label: {
+                                            RestaurantRowCard(restaurant: restaurant)
+                                        }
+                                        .buttonStyle(.plain)
+                                    }
+                                }
+                                .frame(width: contentWidth, alignment: .leading)
                             }
                         }
+                        .frame(maxWidth: .infinity)
+                        .padding(.horizontal, 16)
+                        .padding(.vertical, 20)
                     }
-                    .padding(.horizontal, 16)
-                    .padding(.vertical, 20)
                 }
             }
             .navigationTitle("Restaurants")
@@ -192,6 +200,7 @@ private struct RestaurantRowCard: View {
                 RemoteImageView(urlString: restaurant.imageURL)
             }
         }
+        .frame(maxWidth: .infinity)
     }
 }
 
